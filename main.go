@@ -3,8 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"gotools/api"
-	"gotools/commands"
+	"petdog/api"
+	"petdog/commands"
 )
 
 func main() {

@@ -3,7 +3,6 @@ package conf
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -13,12 +12,13 @@ import (
 
 type Appconfig struct {
 	Name     string
+	Apppath  string
 	Dirs     []string
 	Files    []string
 	Template []string
 }
 
-const basedir = "/home/steven/go/gotools"
+const basedir = "/home/steven/go/petdog"
 
 func NewAppconfig(name string) *Appconfig {
 	return &Appconfig{Name: name}
@@ -53,25 +53,20 @@ func (c *Appconfig) parseparams(pname string) error {
 			c.Dirs = append(c.Dirs, val)
 		case "files":
 			c.Files = append(c.Files, val)
-		case "template":
+		case "templates":
 			c.Template = append(c.Template, val)
 		}
 	}
 	return nil
 }
 
+// ParserTemplate parse the template and create file
 func (c *Appconfig) ParserTemplate() error {
 	if c.Template != nil {
-		appPath, err := os.Getwd()
-		if err != nil {
-			return fmt.Errorf("get current path error: %w", err)
-		}
-
 		for _, v := range c.Template {
-			temppath := filepath.Join(appPath, "./conf/template", v)
+			temppath := filepath.Join(basedir, "./conf/template", v)
 			vv := strings.TrimSuffix(v, ".tpl")
-			destpath := filepath.Join(appPath, vv)
-
+			destpath := filepath.Join(c.Apppath, vv)
 			if err := c.copyfile(temppath, destpath); err != nil {
 				fmt.Println(err)
 				continue

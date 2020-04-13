@@ -2,10 +2,10 @@ package api
 
 import (
 	"fmt"
-	"gotools/conf"
-	"gotools/utils"
 	"os"
 	path "path/filepath"
+	"petdog/conf"
+	"petdog/utils"
 	"strings"
 )
 
@@ -14,14 +14,15 @@ func NewProject(appname string) error {
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
-	appPath := path.Join(currpath, appname)
+
 	var modelname string
 	if strings.Contains(appname, ":") {
 		modelname = strings.Split(appname, ":")[0]
+		appname = strings.Split(appname, ":")[1]
 	} else {
 		modelname = "base"
 	}
-
+	appPath := path.Join(currpath, appname)
 	if utils.IsExist(appname) {
 		return fmt.Errorf("Error: the same file or directory name has been exists, -%s", appname)
 	}
@@ -47,6 +48,7 @@ func generateDirAndFile(appdir, modelname string) error {
 	if err := appconfig.Parse(); err != nil {
 		return fmt.Errorf("%w", err)
 	}
+	appconfig.Apppath = appdir
 
 	for _, dir := range appconfig.Dirs {
 		if err := os.Mkdir(path.Join(appdir, dir), 0755); err != nil {
