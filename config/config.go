@@ -1,4 +1,4 @@
-package conf
+package config
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"text/template"
 
 	"gopkg.in/ini.v1"
 )
@@ -37,7 +38,7 @@ func (c *Appconfig) Parse() error {
 
 // parseparams parse struct Appconfig fields values
 func (c *Appconfig) parseparams(pname string) error {
-	configPath := path.Join(basedir, "./conf/app.ini")
+	configPath := path.Join(basedir, "./conf/", c.Name+".ini")
 	cfg, err := ini.Load(configPath)
 	if err != nil {
 		return fmt.Errorf("Load ini file error: %w", err)
@@ -64,7 +65,7 @@ func (c *Appconfig) parseparams(pname string) error {
 func (c *Appconfig) ParserTemplate() error {
 	if c.Template != nil {
 		for _, v := range c.Template {
-			temppath := filepath.Join(basedir, "./conf/template", v)
+			temppath := filepath.Join(basedir, "./template", c.Name, v)
 			vv := strings.TrimSuffix(v, ".tpl")
 			destpath := filepath.Join(c.Apppath, vv)
 			if err := c.copyfile(temppath, destpath); err != nil {
@@ -85,6 +86,19 @@ func (c *Appconfig) copyfile(src, dst string) error {
 	err = ioutil.WriteFile(dst, input, 0644)
 	if err != nil {
 		return fmt.Errorf("copy template file error: %w", err)
+	}
+	return nil
+}
+
+func (c *Appconfig) handlerTemplate(src, dst string) error {
+	tempname := filepath.Base(src)
+	t, err := template.New(tempname).ParseFiles(src)
+	if err != nil {
+		return fmt.Errorf("parse template %s error: %w", src, err)
+	}
+
+	if err := t.Execute(dst, c.Name); err != nil {
+		return fmt.Errorf("template execute error: %w", err)
 	}
 	return nil
 }
