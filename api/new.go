@@ -2,9 +2,10 @@ package api
 
 import (
 	"fmt"
+	"go/build"
 	"os"
 	path "path/filepath"
-	"petdog/conf"
+	"petdog/config"
 	"petdog/utils"
 	"strings"
 )
@@ -36,7 +37,10 @@ func NewProject(appname string) error {
 	if err := os.Chdir(appPath); err != nil {
 		return fmt.Errorf("%w", err)
 	}
-	if err := utils.ExecShell("/usr/bin/go", "mod", "init", appname); err != nil {
+
+	goroot := path.Join(build.Default.GOROOT, "./bin/go")
+
+	if err := utils.ExecShell(goroot, "mod", "init", appname); err != nil {
 		return fmt.Errorf("go mod init error: %w", err)
 	}
 
@@ -44,7 +48,7 @@ func NewProject(appname string) error {
 }
 
 func generateDirAndFile(appdir, modelname string) error {
-	appconfig := conf.NewAppconfig(modelname)
+	appconfig := config.NewAppconfig(modelname)
 	if err := appconfig.Parse(); err != nil {
 		return fmt.Errorf("%w", err)
 	}
@@ -57,16 +61,8 @@ func generateDirAndFile(appdir, modelname string) error {
 		fmt.Printf("mkdir directory %s/%s\n", appdir, dir)
 	}
 
-	for _, filename := range appconfig.Files {
-		filepath := path.Join(appdir, filename)
-		f, err := os.Create(filepath)
-		if err != nil {
-			return fmt.Errorf("create file error: %w", err)
-		}
-		f.Close()
-		fmt.Printf("created file %s\n", filepath)
-	}
-	if err := appconfig.ParserTemplate(); err != nil {
+	// create file main.go
+	if err := appconfig.GenerateMain(); err != nil {
 		return fmt.Errorf("%w", err)
 	}
 	return nil

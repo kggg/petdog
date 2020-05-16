@@ -3,23 +3,35 @@ package config
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path"
 	"path/filepath"
-	"strings"
 	"text/template"
 
 	"gopkg.in/ini.v1"
 )
 
 type Appconfig struct {
-	Name     string
-	Apppath  string
-	Dirs     []string
-	Files    []string
-	Template []string
+	Basedir string
+	Name    string
+	Apppath string
+	Dirs    []string
 }
 
-const basedir = "/home/steven/go/petdog"
+func (c *Appconfig) getBasedir() error {
+	//filePath := filePath.Join(c.)
+	cfg, err := ini.Load("./conf/app.conf")
+	if err != nil {
+		return fmt.Errorf("Load ini file error: %w", err)
+	}
+	val, err := cfg.Section("").GetKey("basedir")
+	if err != nil {
+		return fmt.Errorf("get ini basedir info error: %w", err)
+	}
+
+	c.Basedir = val.Value()
+	return nil
+}
 
 func NewAppconfig(name string) *Appconfig {
 	return &Appconfig{Name: name}
@@ -27,57 +39,53 @@ func NewAppconfig(name string) *Appconfig {
 
 // Parse parse params from file config/app.ini
 func (c *Appconfig) Parse() error {
-	params := []string{"dirs", "files", "templates"}
-	for _, v := range params {
-		if err := c.parseparams(v); err != nil {
-			return fmt.Errorf("%w", err)
-		}
+	err := c.getBasedir()
+	if err != nil {
+		return fmt.Errorf("%w", err)
 	}
+	currentPath, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+	c.Apppath = currentPath
+
+	if err := c.parseparams(); err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
 	return nil
 }
 
 // parseparams parse struct Appconfig fields values
-func (c *Appconfig) parseparams(pname string) error {
-	configPath := path.Join(basedir, "./conf/", c.Name+".ini")
+func (c *Appconfig) parseparams() error {
+	configPath := path.Join(c.Basedir, "./conf/", c.Name+".ini")
 	cfg, err := ini.Load(configPath)
 	if err != nil {
 		return fmt.Errorf("Load ini file error: %w", err)
 	}
-	val, err := cfg.Section(c.Name).GetKey(pname)
+	val, err := cfg.Section(c.Name).GetKey("dirs")
 	if err != nil {
-		return fmt.Errorf("get ini %s error: %w", pname, err)
+		return fmt.Errorf("get ini dirs error: %w", err)
 	}
 	list := val.Strings(",")
 	for _, val := range list {
-		switch pname {
-		case "dirs":
-			c.Dirs = append(c.Dirs, val)
-		case "files":
-			c.Files = append(c.Files, val)
-		case "templates":
-			c.Template = append(c.Template, val)
-		}
+		c.Dirs = append(c.Dirs, val)
 	}
 	return nil
 }
 
-// ParserTemplate parse the template and create file
-func (c *Appconfig) ParserTemplate() error {
-	if c.Template != nil {
-		for _, v := range c.Template {
-			temppath := filepath.Join(basedir, "./template", c.Name, v)
-			vv := strings.TrimSuffix(v, ".tpl")
-			destpath := filepath.Join(c.Apppath, vv)
-			if err := c.copyfile(temppath, destpath); err != nil {
-				fmt.Println(err)
-				continue
-			}
-		}
+func (c *Appconfig) GenerateMain() error {
+	src := filepath.Join(c.Basedir, "./conf/template/main.go.tpl")
+
+	dst := filepath.Join(c.Apppath, "main.go")
+	err := c.copyFile(src, dst)
+	if err != nil {
+		return fmt.Errorf("%w", err)
 	}
 	return nil
 }
 
-func (c *Appconfig) copyfile(src, dst string) error {
+func (c *Appconfig) copyFile(src, dst string) error {
 	input, err := ioutil.ReadFile(src)
 	if err != nil {
 		return fmt.Errorf("read template file error: %w", err)
@@ -96,8 +104,11 @@ func (c *Appconfig) handlerTemplate(src, dst string) error {
 	if err != nil {
 		return fmt.Errorf("parse template %s error: %w", src, err)
 	}
-
-	if err := t.Execute(dst, c.Name); err != nil {
+	f, err := os.Create(dst)
+	if err != nil {
+		return fmt.Errorf("handlerTemplate openfile error: %w", err)
+	}
+	if err := t.Execute(f, c.Name); err != nil {
 		return fmt.Errorf("template execute error: %w", err)
 	}
 	return nil

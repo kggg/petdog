@@ -20,7 +20,9 @@ petdog 是方便新建go web项目的一个小工具, 尽量去掉一些重复�
 
 
 ### make 生成一些模板文件
-    petdog make  [ controller|models ] filename
+    petdog make  tempname:directoryname filename
+
+    //make生成文件是否受conf下的projectname限制呢？
 
 
 ### 模板说明

@@ -1,10 +1,7 @@
 package main
 
 import(
-	"flag"
-	"fmt"
-	"petdog/api"
-	"petdog/commands"
+
 )
 
 func main() {
@@ -18,10 +15,6 @@ func main() {
 
 	switch args[0]{
 	case "help":
-		if len(args) < 2 {
-			fmt.Println("no project name append params new")
-			return
-		}
 		cmd.Help(args[1])
 	case "new":
 		if len(args) < 2 {
