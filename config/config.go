@@ -6,21 +6,23 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"text/template"
 
 	"gopkg.in/ini.v1"
 )
 
 type Appconfig struct {
-	Basedir string
+	//Basedir string
 	Name    string
 	Apppath string
 	Dirs    []string
 }
 
+const basedir = "/home/steven/go/petdog"
+
+/*
 func (c *Appconfig) getBasedir() error {
-	//filePath := filePath.Join(c.)
-	cfg, err := ini.Load("./conf/app.conf")
+
+	cfg, err := ini.Load(basedir)
 	if err != nil {
 		return fmt.Errorf("Load ini file error: %w", err)
 	}
@@ -32,6 +34,7 @@ func (c *Appconfig) getBasedir() error {
 	c.Basedir = val.Value()
 	return nil
 }
+*/
 
 func NewAppconfig(name string) *Appconfig {
 	return &Appconfig{Name: name}
@@ -39,10 +42,12 @@ func NewAppconfig(name string) *Appconfig {
 
 // Parse parse params from file config/app.ini
 func (c *Appconfig) Parse() error {
-	err := c.getBasedir()
-	if err != nil {
-		return fmt.Errorf("%w", err)
-	}
+	/*
+		err := c.getBasedir()
+		if err != nil {
+			return fmt.Errorf("%w", err)
+		}
+	*/
 	currentPath, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("%w", err)
@@ -58,7 +63,7 @@ func (c *Appconfig) Parse() error {
 
 // parseparams parse struct Appconfig fields values
 func (c *Appconfig) parseparams() error {
-	configPath := path.Join(c.Basedir, "./conf/", c.Name+".ini")
+	configPath := path.Join(basedir, "./conf/", c.Name+".ini")
 	cfg, err := ini.Load(configPath)
 	if err != nil {
 		return fmt.Errorf("Load ini file error: %w", err)
@@ -75,7 +80,7 @@ func (c *Appconfig) parseparams() error {
 }
 
 func (c *Appconfig) GenerateMain() error {
-	src := filepath.Join(c.Basedir, "./conf/template/main.go.tpl")
+	src := filepath.Join(basedir, "./conf/template/main.go.tpl")
 
 	dst := filepath.Join(c.Apppath, "main.go")
 	err := c.copyFile(src, dst)
@@ -94,22 +99,6 @@ func (c *Appconfig) copyFile(src, dst string) error {
 	err = ioutil.WriteFile(dst, input, 0644)
 	if err != nil {
 		return fmt.Errorf("copy template file error: %w", err)
-	}
-	return nil
-}
-
-func (c *Appconfig) handlerTemplate(src, dst string) error {
-	tempname := filepath.Base(src)
-	t, err := template.New(tempname).ParseFiles(src)
-	if err != nil {
-		return fmt.Errorf("parse template %s error: %w", src, err)
-	}
-	f, err := os.Create(dst)
-	if err != nil {
-		return fmt.Errorf("handlerTemplate openfile error: %w", err)
-	}
-	if err := t.Execute(f, c.Name); err != nil {
-		return fmt.Errorf("template execute error: %w", err)
 	}
 	return nil
 }

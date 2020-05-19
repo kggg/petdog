@@ -1,4 +1,4 @@
-package {{ packagename }}
+package {{ .packagename }}
 import(
     "github.com/gin-gonic/gin"
 )
